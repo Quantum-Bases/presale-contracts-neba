@@ -26,11 +26,11 @@ contract RateLimiter is AccessControl {
     uint256 public minTimeBetweenTx = 30; // 30 seconds between transactions
     uint256 public maxTxPerPeriod = 10; // Maximum 10 transactions per period
     uint256 public period = 1 days; // Period duration
-    uint256 public maxDailySpendingUSD = 500 * 1e6; // Maximum $500 daily spending (6 decimals)
+    // uint256 public maxDailySpendingUSD = 500 * 1e6; // Maximum $500 daily spending (6 decimals)
     
     event RateLimitExceeded(address indexed account, string reason);
     event RateLimitUpdated(uint256 minTimeBetweenTx, uint256 maxTxPerPeriod, uint256 period);
-    event DailySpendingLimitUpdated(uint256 maxDailySpendingUSD);
+    // event DailySpendingLimitUpdated(uint256 maxDailySpendingUSD);
     event LimitReset(address indexed account);
     
     /**
@@ -77,11 +77,11 @@ contract RateLimiter is AccessControl {
             limit.dailySpentUSD = 0;
         }
         
-        // Check daily spending limit
-        if (limit.dailySpentUSD + usdAmount > maxDailySpendingUSD) {
-            emit RateLimitExceeded(account, "Daily spending limit exceeded");
-            revert("RateLimiter: daily spending limit exceeded");
-        }
+        // Check daily spending limit - temporarily disabled for unlimited spending
+        // if (limit.dailySpentUSD + usdAmount > maxDailySpendingUSD) {
+        //     emit RateLimitExceeded(account, "Daily spending limit exceeded");
+        //     revert("RateLimiter: daily spending limit exceeded");
+        // }
 
         
         // Update limits
@@ -121,16 +121,16 @@ contract RateLimiter is AccessControl {
         emit RateLimitUpdated(_minTimeBetweenTx, _maxTxPerPeriod, _period);
     }
     
-    /**
-     * @notice Update daily spending limit
-     * @param _maxDailySpendingUSD New maximum daily spending in USD (6 decimals)
-     */
-    function updateDailySpendingLimit(uint256 _maxDailySpendingUSD) external onlyRole(RATE_ADMIN_ROLE) {
-        require(_maxDailySpendingUSD > 0, "RateLimiter: invalid daily spending limit");
+    // /**
+    //  * @notice Update daily spending limit
+    //  * @param _maxDailySpendingUSD New maximum daily spending in USD (6 decimals)
+    //  */
+    // function updateDailySpendingLimit(uint256 _maxDailySpendingUSD) external onlyRole(RATE_ADMIN_ROLE) {
+    //     require(_maxDailySpendingUSD > 0, "RateLimiter: invalid daily spending limit");
         
-        maxDailySpendingUSD = _maxDailySpendingUSD;
-        emit DailySpendingLimitUpdated(_maxDailySpendingUSD);
-    }
+    //     maxDailySpendingUSD = _maxDailySpendingUSD;
+    //     emit DailySpendingLimitUpdated(_maxDailySpendingUSD);
+    // }
     
     /**
      * @notice Get rate limit info for an address
