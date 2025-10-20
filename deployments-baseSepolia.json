@@ -1,0 +1,15 @@
+{
+  "network": "baseSepolia",
+  "deployer": "0xA9E2afDAeb8E9f60918904faC630D8932b1c5Fc1",
+  "multisig": "0xA9E2afDAeb8E9f60918904faC630D8932b1c5Fc1",
+  "timestamp": "2025-10-19T01:11:22.254Z",
+  "contracts": {
+    "NEBAToken": "0x10f8c23BD12F7aE8d57aB7e127D89dAe9AfeC333",
+    "KYCRegistry": "0xd3DBc6367C27842146A3Af6c8Ad56C52a70Eb42D",
+    "RateLimiter": "0xEDB3d0987C420D37101aF5f9254199D05F35abb0",
+    "FundsVault": "0xc6c045917e86b53c91c6e1a2F2CCa4938bb8ea17",
+    "VestingVault": "0x442B5d5D93C2EA5ff232cb006d27Bd0707AD8F84",
+    "ReferralSystem": "0x205686a74267Abd5B4937eD583C5030C0DF0A792",
+    "SaleManager": "0xe397180d1eE1610E0b0c12Cbda99646bC2EC1FF3"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IRateLimiter",
+  "sourceName": "src/interfaces/IRateLimiter.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "usdAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "checkAndUpdateLimit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "getRateLimitInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "lastTxTime",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "txCount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "periodStart",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dailySpentUSD",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dailyPeriodStart",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxDailySpendingUSD",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "resetLimit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
