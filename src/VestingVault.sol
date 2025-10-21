@@ -126,25 +126,33 @@ contract VestingVault is ReentrancyGuard, AccessControl {
     function claimVested() external nonReentrant {
         uint256 claimable = getClaimableAmount(msg.sender);
         require(claimable > 0, "VestingVault: nothing to claim");
-        
+
+        // Check for overflow before claiming
+        require(
+            claimable <= token.balanceOf(address(this)),
+            "VestingVault: insufficient vault balance"
+        );
+
         VestingSchedule[] storage schedules = _vestingSchedules[msg.sender];
-        
+
         for (uint256 i = 0; i < schedules.length; i++) {
             VestingSchedule storage schedule = schedules[i];
-            
+
             if (block.timestamp < schedule.cliffEnd) {
                 continue;
             }
-            
+
             uint256 vested = _calculateVestedAmount(schedule);
             uint256 unclaimed = vested - schedule.claimedAmount;
-            
+
             if (unclaimed > 0) {
                 schedule.claimedAmount += unclaimed;
             }
         }
-        
+
+        // Use SafeERC20 for transfer
         token.safeTransfer(msg.sender, claimable);
+
         emit TokensClaimed(msg.sender, claimable);
     }
     
@@ -174,19 +182,23 @@ contract VestingVault is ReentrancyGuard, AccessControl {
     function getClaimableAmount(address beneficiary) public view returns (uint256) {
         VestingSchedule[] memory schedules = _vestingSchedules[beneficiary];
         uint256 totalClaimable = 0;
-        
+
         for (uint256 i = 0; i < schedules.length; i++) {
             VestingSchedule memory schedule = schedules[i];
-            
+
             if (block.timestamp < schedule.cliffEnd) {
-                continue;
+                return 0;
             }
-            
+
             uint256 vested = _calculateVestedAmount(schedule);
+
+            // Safety check
+            require(vested <= schedule.totalAmount, "VestingVault: calculation overflow");
+
             uint256 unclaimed = vested - schedule.claimedAmount;
             totalClaimable += unclaimed;
         }
-        
+
         return totalClaimable;
     }
     

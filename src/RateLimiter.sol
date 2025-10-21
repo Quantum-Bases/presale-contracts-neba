@@ -18,19 +18,23 @@ contract RateLimiter is AccessControl {
         uint256 periodStart;
         uint256 dailySpentUSD; // Daily spending in USD (6 decimals)
         uint256 dailyPeriodStart; // Start of daily spending period
+        uint256 totalVolume; // Track volume per period
     }
     
     mapping(address => RateLimit) private _limits;
     
     // Configurable parameters
-    uint256 public minTimeBetweenTx = 30; // 30 seconds between transactions
-    uint256 public maxTxPerPeriod = 10; // Maximum 10 transactions per period
-    uint256 public period = 1 days; // Period duration
-    // uint256 public maxDailySpendingUSD = 500 * 1e6; // Maximum $500 daily spending (6 decimals)
+    uint256 public minTimeBetweenTx = 60; // 1 minute (not 30 seconds)
+    uint256 public maxTxPerPeriod = 5; // 5 transactions (not 10)
+    uint256 public period = 24 hours;
+
+    // Add per-transaction amount limits
+    uint256 public minPurchaseAmount = 100e6; // $100 minimum in USDC decimals
+    uint256 public maxPurchaseAmount = 50000e6; // $50,000 maximum in USDC decimals
     
     event RateLimitExceeded(address indexed account, string reason);
     event RateLimitUpdated(uint256 minTimeBetweenTx, uint256 maxTxPerPeriod, uint256 period);
-    // event DailySpendingLimitUpdated(uint256 maxDailySpendingUSD);
+    event RateLimitCheck(address indexed user, uint256 amountUSD, uint256 txCount);
     event LimitReset(address indexed account);
     
     /**
@@ -52,42 +56,35 @@ contract RateLimiter is AccessControl {
     function checkAndUpdateLimit(address account, uint256 usdAmount) external onlyRole(SALE_ROUND_ROLE) {
         RateLimit storage limit = _limits[account];
         uint256 currentTime = block.timestamp;
-        
-        // Check minimum time between transactions
-        if (currentTime < limit.lastTransactionTime + minTimeBetweenTx) {
-            emit RateLimitExceeded(account, "Too frequent");
-            revert("RateLimiter: too frequent");
-        }
-        
+
+        // Check time between transactions
+        require(
+            currentTime >= limit.lastTransactionTime + minTimeBetweenTx,
+            "RateLimiter: transaction too frequent"
+        );
+
+        // Check amount limits
+        require(
+            usdAmount >= minPurchaseAmount && usdAmount <= maxPurchaseAmount,
+            "RateLimiter: amount out of bounds"
+        );
+
         // Reset period if needed
         if (currentTime >= limit.periodStart + period) {
             limit.periodStart = currentTime;
             limit.transactionCount = 0;
+            limit.totalVolume = 0;
         }
-        
-        // Check max transactions per period
-        if (limit.transactionCount >= maxTxPerPeriod) {
-            emit RateLimitExceeded(account, "Period limit exceeded");
-            revert("RateLimiter: period limit exceeded");
-        }
-        
-        // Reset daily spending if needed (24 hours)
-        if (currentTime >= limit.dailyPeriodStart + 1 days) {
-            limit.dailyPeriodStart = currentTime;
-            limit.dailySpentUSD = 0;
-        }
-        
-        // Check daily spending limit - temporarily disabled for unlimited spending
-        // if (limit.dailySpentUSD + usdAmount > maxDailySpendingUSD) {
-        //     emit RateLimitExceeded(account, "Daily spending limit exceeded");
-        //     revert("RateLimiter: daily spending limit exceeded");
-        // }
 
-        
-        // Update limits
+        // Check transaction count
+        require(limit.transactionCount < maxTxPerPeriod, "RateLimiter: too many transactions");
+
+        // Update activity
         limit.lastTransactionTime = currentTime;
         limit.transactionCount++;
-        limit.dailySpentUSD += usdAmount;
+        limit.totalVolume += usdAmount;
+
+        emit RateLimitCheck(account, usdAmount, limit.transactionCount);
     }
     
     /**
@@ -140,21 +137,24 @@ contract RateLimiter is AccessControl {
      * @return periodStart Start of current period
      * @return dailySpentUSD Daily spending in USD (6 decimals)
      * @return dailyPeriodStart Start of daily spending period
+     * @return totalVolume Total volume in current period
      */
     function getRateLimitInfo(address account) external view returns (
         uint256 lastTxTime,
         uint256 txCount,
         uint256 periodStart,
         uint256 dailySpentUSD,
-        uint256 dailyPeriodStart
+        uint256 dailyPeriodStart,
+        uint256 totalVolume
     ) {
         RateLimit memory limit = _limits[account];
         return (
-            limit.lastTransactionTime, 
-            limit.transactionCount, 
+            limit.lastTransactionTime,
+            limit.transactionCount,
             limit.periodStart,
             limit.dailySpentUSD,
-            limit.dailyPeriodStart
+            limit.dailyPeriodStart,
+            limit.totalVolume
         );
     }
 }

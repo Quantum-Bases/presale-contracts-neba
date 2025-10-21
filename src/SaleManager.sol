@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SaleRound} from "./SaleRound.sol";
@@ -13,7 +14,7 @@ import {VestingVault} from "./VestingVault.sol";
  * @notice Orchestrates multiple sale rounds and manages overall presale
  * @dev Creates and manages SaleRound contracts
  */
-contract SaleManager is Ownable {
+contract SaleManager is Ownable, Pausable {
     using SafeERC20 for IERC20;
     
     struct TimelockOperation {
@@ -34,7 +35,7 @@ contract SaleManager is Ownable {
     address public immutable ethUSDOracle;
     ReferralSystem public immutable referralSystem;
     
-    uint256 public timelockDelay = 2 days;
+    uint256 public timelockDelay = 48 hours;
     
     SaleRound[] public rounds;
     mapping(bytes32 => TimelockOperation) public timelockOperations;
@@ -44,6 +45,8 @@ contract SaleManager is Ownable {
     event OperationExecuted(bytes32 indexed operationId);
     event OperationCancelled(bytes32 indexed operationId);
     event TimelockDelayUpdated(uint256 newDelay);
+    event EmergencyPause(address indexed caller, uint256 timestamp);
+    event Unpause(address indexed caller, uint256 timestamp);
     
     /**
      * @dev Constructor sets up the sale manager
@@ -91,7 +94,7 @@ contract SaleManager is Ownable {
      * @param config Round configuration
      * @return address Address of the created SaleRound contract
      */
-    function createRound(SaleRound.RoundConfig memory config) external onlyOwner returns (address) {
+    function createRound(SaleRound.RoundConfig memory config) external onlyOwner whenNotPaused returns (address) {
         require(config.tokenPriceUSD > 0, "SaleManager: invalid price");
         require(config.hardCapUSD > 0, "SaleManager: invalid hard cap");
         require(config.endTime > config.startTime, "SaleManager: invalid time range");
@@ -193,14 +196,25 @@ contract SaleManager is Ownable {
         emit OperationCancelled(operationId);
     }
     
+    function emergencyPause() external onlyOwner {
+        _pause();
+        emit EmergencyPause(msg.sender, block.timestamp);
+    }
+
+    function unpause() external onlyOwner {
+        require(paused(), "SaleManager: not paused");
+        _unpause();
+        emit Unpause(msg.sender, block.timestamp);
+    }
+
     /**
      * @notice Update timelock delay
      * @param newDelay New delay in seconds
      */
     function updateTimelockDelay(uint256 newDelay) external onlyOwner {
-        require(newDelay >= 1 days, "SaleManager: delay too short");
+        require(newDelay >= 24 hours, "SaleManager: delay too short");
         require(newDelay <= 7 days, "SaleManager: delay too long");
-        
+
         timelockDelay = newDelay;
         emit TimelockDelayUpdated(newDelay);
     }

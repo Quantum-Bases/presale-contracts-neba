@@ -47,6 +47,10 @@ contract SaleRound is ReentrancyGuard, Pausable {
     // Chainlink-like oracle addresses for price feeds (ETH/USD, etc.)
     // For simplicity, we'll use a simple oracle pattern
     address public ethUSDOracle;
+
+    uint256 private constant MAX_ORACLE_DELAY = 3600; // 1 hour max staleness
+    uint256 private constant MIN_PRICE = 1000e8; // $1,000 minimum (adjust based on asset)
+    uint256 private constant MAX_PRICE = 10000e8; // $10,000 maximum (adjust based on asset)
     
     uint256 public totalRaisedUSD; // Total raised in USD (6 decimals)
     uint256 public totalTokensSold; // Total tokens sold (18 decimals)
@@ -350,13 +354,25 @@ contract SaleRound is ReentrancyGuard, Pausable {
         // In production, this would call a Chainlink oracle
         // For now, we'll use a simple interface
         (bool success, bytes memory data) = ethUSDOracle.staticcall(
-            abi.encodeWithSignature("latestAnswer()")
+            abi.encodeWithSignature("latestRoundData()")
         );
         require(success, "SaleRound: oracle call failed");
-        
-        int256 price = abi.decode(data, (int256));
+
+        (
+            uint80 roundId,
+            int256 price,
+            ,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = abi.decode(data, (uint80, int256, uint256, uint256, uint80));
+
+        // Validate price data
         require(price > 0, "SaleRound: invalid price");
-        
+        require(updatedAt > 0, "SaleRound: invalid timestamp");
+        require(block.timestamp - updatedAt <= MAX_ORACLE_DELAY, "SaleRound: stale price data");
+        require(answeredInRound >= roundId, "SaleRound: stale round data");
+        require(uint256(price) >= MIN_PRICE && uint256(price) <= MAX_PRICE, "SaleRound: price out of bounds");
+
         // Chainlink ETH/USD has 8 decimals, we need 6
         return uint256(price) / 100;
     }

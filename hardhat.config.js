@@ -4,7 +4,7 @@ require("hardhat-gas-reporter");
 require("solidity-coverage");
 require("dotenv").config();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "50405b1684feedafbc84e2061240177556adbce25dc78857246b035485d82321";
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
 const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY || "";
